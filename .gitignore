@@ -2,3 +2,6 @@ __pycache__/
 .pytest_cache/
 *.pyc
 evals/results/
+evals-control/results/
+evals-control/*.json
+evals-control/log.txt

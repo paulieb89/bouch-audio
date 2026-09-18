@@ -1,0 +1,70 @@
+commit c2e279d9cb7a03e6abf1ea5df1f74b1f46624f3e
+Author: consumer-test <x@x>
+Date:   Fri Sep 18 03:34:47 2026 +0100
+
+    consumer test: route sound-to-picture audio knowledge to bouch-audio
+
+diff --git a/.claude/skills/sound-to-picture/SKILL.md b/.claude/skills/sound-to-picture/SKILL.md
+index a740fea..ee97ad4 100644
+--- a/.claude/skills/sound-to-picture/SKILL.md
++++ b/.claude/skills/sound-to-picture/SKILL.md
+@@ -5,12 +5,11 @@ description: Routes linear-media score/SFX/mix decisions to the right method —
+ 
+ # Sound to picture
+ 
+-This project has direct access to a substantial existing audio corpus
+-(REAPER Agent Lab, Audio Agent Workbench V2, reaper-mcp) — use it by
+-reference for reasoning, not by copying files into this repo, and not by
+-re-deriving synthesis/mixing theory this project's own numpy code already
+-had to reinvent once (ARC ONE's score worked, but was built with no
+-cross-reference to this existing technique corpus).
++Audio domain knowledge comes from the **bouch-audio** plugin
++(`dev.bouch/audio`), loaded alongside this project, and not from sibling
++repositories. Use its Skills for the reasoning, and keep this Skill for the
++picture-specific routing and conventions. Do not copy its references into
++this repo.
+ 
+ ## Method routing
+ 
+@@ -28,30 +27,19 @@ ONE correctly judged direct synthesis lower-risk than hand-authoring VST
+ automation for its specific cues, and that was the right call for that
+ brief, not evidence that REAPER should always be skipped.
+ 
+-## Production-technique corpus (route, don't re-derive)
++## Audio reasoning (route to bouch-audio, don't re-derive)
+ 
+-For the *reasoning* behind a decision — not the REAPER mechanics — read the
+-relevant section of the existing corpus rather than reinventing it:
+-
+-| Linear-media need | Corpus + location |
++| Linear-media need | bouch-audio Skill |
+ |---|---|
+-| Product-interaction foley (clicks, taps, mechanical detents) | Design as a transient + short decay, same envelope-shaping logic as a percussive hit — `audio-agent-workbench-v2/docs/research/electronic-production-technique/README.md` §6 (kick synthesis: pitch transient + decaying oscillator + click layer) transfers directly even though the target isn't a kick drum. |
+-| Transient emphasis / making a hit read clearly against the mix | Same corpus §9 (saturation/distortion for perceived loudness/edge) and §10 (compression) — a transient that's technically present but perceptually buried needs shaping, not just more gain. |
+-| Sonic branding (a recognisable short musical/SFX signature) | `reaper-agent-lab/docs/music/contemporary/moments-hooks-and-reloads.md` — hook/moment design technique, genre-agnostic. |
+-| Music-to-edit timing, risers/transitions | `reaper-agent-lab/docs/music/playbooks/builds-drops-and-transitions.md`; corpus §19 (ear candy, transitions, movement) and §15 (automation as composition). |
+-| Space/depth (reverb, stereo placement) | Corpus §13 (delay/reverb design) and §14 (stereo width and mono compatibility) — relevant even for a near-silent, minimal mix; "no reverb" is itself a spatial choice, not an absence of one. |
+-| Automation (levels, filter sweeps, sends tracking the picture) | Corpus §15. |
+-| Mix hierarchy (what should be loudest/clearest at any given moment) | Corpus §16–18 (buses/sends, gain staging, layering by function) — apply the *function-separation* reasoning (what each element's job is) even in a sparse mix with few elements. |
+-| Delivery-aware mastering | `reaper-agent-lab/docs/audio-development/testing-and-verification.md` (measured-not-assumed philosophy) plus this project's own `src/assemble.py` two-pass loudnorm and `src/verify.py` ebur128 check — already proven, don't rebuild it. |
+-
+-Do not copy any of this corpus into this repo. Read the specific section by
+-path when a decision actually needs it.
+-
+-For the picture-specific mapping of that corpus (foley structure, transient
+-emphasis, sonic identity, edit-point/musical timing, transitions, contrast/
+-negative space, depth via reverb, automation tied to visual events,
+-delivery-conscious mixing) — with each claim tagged source-backed,
+-project-proven, or hypothesis — see `references/picture-sync-and-mix.md`.
++| Designing a sound or cue: interaction foley, transients, sonic signature, risers/transitions, movement tied to picture | `electronic-production` |
++| Balancing the score/SFX mix, transient emphasis against the mix, space/depth, delivery-aware loudness | `mixing-and-mastering` |
++| Checking renders (loudness, true peak, clipping, silence, windowed transient analysis), preparing a blind loudness-matched A/B for the human | `audio-verification` (its `analyze.py` complements this project's `src/verify.py`; it does not replace it) |
++
++For the picture-specific mapping (foley structure, edit-point timing,
++contrast before reveals, depth vs shot distance), see
++`references/picture-sync-and-mix.md`. Its section numbers refer to the
++original corpus; the same material now lives in bouch-audio's references,
++with evidence tiers.
+ 
+ ## Human authority on timbre
+ 
