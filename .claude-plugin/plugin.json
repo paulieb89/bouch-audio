@@ -1,0 +1,18 @@
+{
+  "name": "bouch-audio",
+  "version": "0.1.0",
+  "description": "Portable, evidence-tiered audio production knowledge: electronic-production reasoning (sound design, bass/drums, arrangement, resampling), mixing-and-mastering boundaries, and audio verification (render measurement, verified offline transforms, loudness-matched blind listening). DAW-independent; listening decides musical quality, measurement proves technical properties.",
+  "author": {
+    "name": "Paul Boucherat"
+  },
+  "keywords": [
+    "audio",
+    "music-production",
+    "sound-design",
+    "mixing",
+    "mastering",
+    "audio-verification",
+    "skills",
+    "evidence-tiered"
+  ]
+}
