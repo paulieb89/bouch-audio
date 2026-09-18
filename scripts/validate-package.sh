@@ -93,9 +93,10 @@ PYEOF
 then pass "all relative links resolve; every reference reachable from a Skill"; else fail "reference traversal"; fi
 
 echo "== No absolute or machine-local paths =="
-hits=$(grep -rnE '/home/|/Users/|/usr/bin/python|~/\.|[A-Z]:\\\\' --include='*.md' --include='*.json' --include='*.py' --include='*.sh' \
-  skills references tools tests evidence README.md plugin.json .claude-plugin evals 2>/dev/null \
-  | grep -v 'scripts/validate-package.sh' || true)
+# Tracked files only: gitignored local output (eval results) legitimately
+# records the checkout path and is never published.
+hits=$(git ls-files -z -- skills references tools tests evidence evals evals-control README.md plugin.json .claude-plugin \
+  | xargs -0 grep -nE '/home/|/Users/|/usr/bin/python|~/\.|[A-Z]:\\\\' 2>/dev/null || true)
 [ -n "$hits" ] && { echo "$hits" | sed 's/^/   /'; fail "local paths found"; } || pass "no local paths"
 
 echo "== No REAPER-operational dependency in Skills/references/tools =="
