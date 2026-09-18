@@ -65,8 +65,9 @@ V1/V2 renders (integrated LUFS):
 | studio-core-sprint | −17.34 | −17.25 | −17.3 |
 | uk-club-8bar-experiment-01 | −12.54 | −12.49 | −12.5 |
 
-The same defect exists in the V1 and V2 source copies. This package does
-not modify them. The fix is recorded here for them to adopt.
+The same defect exists in the V1 and V2 source copies. V1 is frozen and
+stays unchanged by decision (2026-09-18), so loudness figures in its
+records carry the small low bias noted above. V2 has not been changed.
 
 ## 3. Skill activation, non-activation and traversal: `claude plugin eval`
 
@@ -150,8 +151,14 @@ without touching the rest of the score or picture.
 | A verification practice failed to generalise to a non-REAPER pipeline | **No.** Postcondition re-derivation, windowed analysis and the loudness-matched blind A/B all applied to a numpy synthesis pipeline unchanged. |
 
 **Not established:** whether the redesign sounds better. The human verdict
-on the A/B is pending. The consumer changes live in a scratch clone and
-were not applied to the linear-media repository.
+on the A/B is pending.
+
+**Preserved, not adopted (2026-09-18).** The A/B, answer key, candidate
+patches and measurements are committed in linear-media-agent-lab at
+`5339ba5`, under `docs/experiments/bouch-audio-foley-ab/`, as evidence
+only. That project's product (`src/`, `audio/`, timeline, Skills, final
+render) is unchanged. Applying the candidate patch to `73efd60`
+regenerates the A/B files byte for byte.
 
 ## 5. Consumer-side follow-up (outside this package)
 
