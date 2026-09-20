@@ -166,3 +166,102 @@ Linear Media's `references/picture-sync-and-mix.md` still cites V1/V2
 paths and corpus section numbers. It worked in this test because the
 session routed through bouch-audio first. Retargeting it to bouch-audio
 reference names is a Linear Media change, not a package change.
+
+---
+
+# Qualification record: bouch-audio v0.2.0
+
+Date: 2026-09-20. Python 3.12, numpy 1.26.4 / scipy 1.16.3.
+
+Status: **qualified experimental baseline, unchanged in kind from v0.1.0**.
+v0.2.0 adds one measurement capability and changes nothing else. Every
+v0.1.0 claim above still stands and is not restated here.
+
+## 1. What changed
+
+`low_frequency_faults` in `tools/analyze.py`, adding `dc_offset_max_abs`
+and `infrasonic_below_20hz_pct` to the report. Promoted from Audio Agent
+Workbench V2 at `3399f39`. No Skill, reference or knowledge content
+changed.
+
+This was the one capability the 2026-09-20 audio reconciliation found
+qualified in V2 but missing here. The reconciliation is recorded in
+`agent-enumeration-lab` at
+`findings/domain/audio/audio-lifecycle-reconciliation.md`.
+
+Two consumption changes ship with it, so that a project can run *this*
+release rather than a copy of it:
+
+- The `audio-verification` Skill now invokes the analyser as
+  `${CLAUDE_PLUGIN_ROOT}/tools/analyze.py` instead of a path relative to
+  the Skill directory. That variable substitutes in plugin Skills, so the
+  command resolves to the installed, pinned package from any working
+  directory. `allowed-tools` was set to the same paths so the call needs no
+  permission prompt. Relative Markdown links between documents are
+  unchanged and still traverse.
+- `analyze.py --version` reports the version from `plugin.json` rather than
+  a string repeated in the script, and a copy of the file outside its
+  package reports `detached copy` instead of claiming a version. That is
+  how a consumer tells a pinned install from a stray copy.
+
+## 2. The promoted capability's own evidence
+
+Carried over from V2 intact, which is why it qualified:
+
+| Check | Evidence |
+|---|---|
+| `test_dc_offset_known_positive` | Synthetic 0.3 offset on the left channel only — the real fault's shape. Reads 0.3 ± 0.005. |
+| `test_infrasonic_known_positive` | 10 Hz component at equal amplitude to a 110 Hz tone must carry 35–65% of the energy. |
+| `test_dc_and_infrasonic_are_near_zero_on_a_clean_tone` | Negative case: a clean 440 Hz tone reports < 0.001 DC and < 0.5% infrasonic. |
+| `test_dc_field_catches_the_real_intermittent_render_fault` | The real V2 `chords-melody-variations-01` pair: same project, same notes, one render faulty. Faulty > 0.5, clean < 0.01. **Run for this record** against V2's renders via `ANALYZE_DC_RENDERS`; passed. |
+
+The fields report faults; they do not judge quality. That boundary is
+stated in `tools/README.md` and in the function's own docstring.
+
+## 3. The already-qualified behaviour is preserved
+
+Verified two ways rather than assumed.
+
+**Field-level regression.** The v0.1.0 analyzer and the v0.2.0 analyzer
+were run over four real V2 renders of different character (a bass sketch,
+a pad, the DC-faulty render, an FM bell) and their reports compared key by
+key. The only keys that differ anywhere are the two new ones. Every
+previously qualified field — loudness, LRA, peaks, clipping, correlation,
+side/mid, centroid, band energies, silence runs — is identical.
+
+**Both reference check sets pass together.** With the real-material tests
+enabled (`ANALYZE_BELL_RENDERS`, `ANALYZE_DC_RENDERS` pointed at V2's
+render directories), `tests/test_analyze.py` is 20 passed, 0 skipped. This
+includes the v0.1.0 K-weighting evidence (EBU Tech 3341 reference level,
+clipping, inter-sample true peak, silence runs, mono cancellation, and the
+FM window falsification) alongside the new low-frequency checks.
+
+Full suite: **42 passed, 3 skipped** (the skips are optional real-material
+tests without their environment variables set), up from 39 passed /
+2 skipped at v0.1.0.
+
+## 4. Mechanical package checks
+
+`scripts/validate-package.sh`: **ALL CHECKS PASSED**, including schema
+validation, Skill validation, reference traversal (19 relative links), the
+no-local-paths and no-REAPER-vocabulary checks, evidence-tier tags, and the
+tool suite.
+
+## 5. Not covered
+
+The v0.1.0 limits are unchanged and still apply: no ablation, so no answer
+uplift against a baseline; judge-free graders, so no quality measure; one
+consumer, whose musical verdict remains PENDING.
+
+New at v0.2.0: `infrasonic_below_20hz_pct` has a synthetic known-positive
+but **no real-render regression** — unlike the DC field, no recorded case
+in V1 or V2 turned on infrasonic energy. It is qualified as a correctly
+implemented measurement, not as a field proven to have caught a real fault.
+
+## 6. Upstream note
+
+V2's copy of `analyze.py` was corrected on 2026-09-20 (commit `57157e3`)
+to this package's BS.1770 K-weighting, so the two implementations no longer
+disagree on loudness. The statement in the v0.1.0 record that "V2 has not
+been changed" is superseded. V1 remains frozen and unchanged by decision,
+and its recorded loudness figures still carry the small low bias.

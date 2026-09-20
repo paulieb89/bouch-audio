@@ -3,6 +3,7 @@
 Run with: python -m pytest tests/test_analyze.py -v   (needs numpy, scipy, pytest)
 """
 import os
+import subprocess
 import sys
 import wave
 
@@ -257,3 +258,81 @@ def test_silence_run_and_mono_collapse_are_reported(tmp_path):
     r = analyze.analyze(path)
     assert any(0.9 <= s <= 1.1 for s in r["silence_runs_ge_0.5s"])
     assert r["stereo_correlation"] == pytest.approx(-1.0, abs=0.01)
+
+
+# ------------------------------------------------- low-frequency fault reporting
+# Promoted from V2 at 3399f39 with the capability itself. These two fields
+# report faults no other field in the report shows; they do not judge
+# quality. The synthetic known-positives are the qualification evidence —
+# the real-render regression below is optional because the render that
+# motivated the capability is gitignored in V2 and not redistributed here.
+
+def _write(tmp_path, name, samples, fs=44100):
+    path = str(tmp_path / name)
+    write_wav_24bit(path, samples, fs)
+    return path
+
+
+def test_dc_and_infrasonic_are_near_zero_on_a_clean_tone(tone_24bit):
+    report = analyze.analyze(tone_24bit)
+    assert report["dc_offset_max_abs"] < 0.001
+    assert report["infrasonic_below_20hz_pct"] < 0.5
+
+
+def test_dc_offset_known_positive(tmp_path):
+    """A synthetic 0.3 offset on the left channel only (the real fault's shape)."""
+    fs = 44100
+    t = np.arange(fs * 2) / fs
+    tone = 0.3 * np.sin(2 * np.pi * 110.0 * t)
+    x = np.stack([tone + 0.3, tone], axis=1)
+    report = analyze.analyze(_write(tmp_path, "dc.wav", x))
+    assert report["dc_offset_max_abs"] == pytest.approx(0.3, abs=0.005)
+
+
+def test_infrasonic_known_positive(tmp_path):
+    """A 10Hz component at equal amplitude to a 110Hz tone carries ~half the energy."""
+    fs = 44100
+    t = np.arange(fs * 4) / fs
+    sig = 0.3 * np.sin(2 * np.pi * 110.0 * t) + 0.3 * np.sin(2 * np.pi * 10.0 * t)
+    report = analyze.analyze(_write(tmp_path, "infra.wav", np.stack([sig, sig], axis=1)))
+    assert 35.0 < report["infrasonic_below_20hz_pct"] < 65.0
+    assert report["dc_offset_max_abs"] < 0.01
+
+
+# The real intermittent-DC render pair from V2 chords-melody-variations-01:
+#   ANALYZE_DC_RENDERS=<dir with haiku-1-3.wav (faulty) and haiku-1-2.wav (clean)>
+_DC_DIR = os.environ.get("ANALYZE_DC_RENDERS", "")
+DC_FAULT_RENDER = os.path.join(_DC_DIR, "haiku-1-3.wav")
+DC_CLEAN_RENDER = os.path.join(_DC_DIR, "haiku-1-2.wav")
+
+
+@pytest.mark.skipif(
+    not (_DC_DIR and os.path.exists(DC_FAULT_RENDER) and os.path.exists(DC_CLEAN_RENDER)),
+    reason="set ANALYZE_DC_RENDERS to the V2 chords-melody-variations-01 render directory",
+)
+def test_dc_field_catches_the_real_intermittent_render_fault():
+    """The real case: same project, same notes, one render with the fault."""
+    assert analyze.analyze(DC_FAULT_RENDER)["dc_offset_max_abs"] > 0.5
+    assert analyze.analyze(DC_CLEAN_RENDER)["dc_offset_max_abs"] < 0.01
+
+
+# ------------------------------------------------------------ release identity
+# Added in v0.2.0 so a consumer can confirm which release it is running,
+# and can tell a pinned install from a stray copy of this file.
+
+def test_version_reports_the_manifest_version():
+    import json as _json
+    manifest = os.path.join(os.path.dirname(os.path.abspath(analyze.__file__)), os.pardir, "plugin.json")
+    with open(manifest) as f:
+        expected = _json.load(f)["version"]
+    assert analyze.package_version() == expected
+
+
+def test_version_is_honest_about_a_detached_copy(tmp_path, monkeypatch):
+    """A copy of this file outside its package must not claim a version."""
+    stray = tmp_path / "analyze.py"
+    stray.write_text(open(analyze.__file__).read())
+    out = subprocess.run([sys.executable, str(stray), "--version"],
+                         capture_output=True, text=True)
+    assert out.returncode == 0
+    assert "detached copy" in out.stdout

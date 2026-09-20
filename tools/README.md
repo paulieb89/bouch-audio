@@ -21,14 +21,21 @@ analyze.py render.wav --sections sections.json     # + per-section loudness
 Reports: duration, BS.1770-4 integrated loudness, max short-term loudness,
 LRA, sample peak, true peak (4× oversampled), clipped samples (|x| ≥
 0.9999), stereo correlation, side/mid ratio, spectral centroid, six
-band-energy percentages, and silence runs ≥ 0.5 s at −60 dBFS.
-`sections.json` is `[["name", start_s, end_s], ...]`.
+band-energy percentages, silence runs ≥ 0.5 s at −60 dBFS, and two
+low-frequency fault fields (`dc_offset_max_abs`,
+`infrasonic_below_20hz_pct`). `sections.json` is
+`[["name", start_s, end_s], ...]`.
 
 - Input: PCM WAV, 16/24/32-bit integer. Float WAV is rejected by Python's
   `wave` module; convert it first.
 - A window too short for BS.1770 gating returns `null` for
   `lufs_integrated` / `lra_lu`. That is correct, not a failure.
 - Exit 2 on bad arguments or an out-of-bounds window.
+- `dc_offset_max_abs` and `infrasonic_below_20hz_pct` **report faults, they
+  do not judge quality.** A low value does not mean a bass sounds good, and
+  a high one may be a property of the sound rather than a pipeline fault:
+  DC on every attempt is the sound, DC on only some attempts is the
+  pipeline, so re-render.
 
 Provenance: V2 `tools/analyze.py` at `bc460db`, ported from V1's
 implementation. Changes made when promoting it:
@@ -48,6 +55,15 @@ implementation. Changes made when promoting it:
   detector.
 - Portable shebang, PEP 723 inline dependency metadata, and a `np.trapz` →
   `trapezoid` fallback (deprecated in numpy 2).
+
+Added in v0.2.0: `low_frequency_faults`, promoted from V2 at `3399f39` with
+its known-positive tests. It reports DC offset and sub-20 Hz energy — two
+faults no other field in the report shows. An intermittent ~0.56 DC render
+once halved a mix's loudness while every other metric looked plausible (V2
+`chords-melody-variations-01`), which is the case that earned the
+capability. `np.trapz` was replaced by this file's numpy-2-safe
+`_trapezoid` on the way in. Every other reported field is byte-identical to
+v0.1.0 on real renders.
 
 Known quirk (inherited, unchanged): identical L/R channels give
 `side_mid_ratio_db` = `-Infinity`, which Python's `json` emits as a

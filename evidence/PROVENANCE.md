@@ -98,7 +98,11 @@ package's own wording.
   `dx7_voice_extract.py`, `sf2_piano_extract.py`, `sfz_to_dspreset.py`,
   `render_drum_pattern.py`, `reverse_audio.py` (an ffmpeg one-liner whose
   verification lesson is kept in the references). None was needed by the
-  consumer test.
+  consumer test. Still excluded at v0.2.0, and for a second reason found
+  by the 2026-09-20 reconciliation: V2's `tests/` covers `analyze.py`
+  only, so none of the five carries a seeded-fault check. They are
+  demonstrated in use, which is evidence of utility, not of meeting this
+  package's qualification standard.
 - V1 genre maps and `docs/music/contemporary/*`: dated (2024–2026) scene
   vocabulary.
 - V1 `docs/audio-development/testing-and-verification.md` acceptance
@@ -108,3 +112,23 @@ package's own wording.
   bass/hook candidate pick; the "Fred again..-adjacent" aesthetic
   reference).
 - All render corpora, sample libraries, inventories and project files.
+
+
+## v0.2.0 additions (2026-09-20)
+
+- `low_frequency_faults` in `tools/analyze.py`, with
+  `test_dc_and_infrasonic_are_near_zero_on_a_clean_tone`,
+  `test_dc_offset_known_positive`, `test_infrasonic_known_positive` and the
+  optional real-render regression `test_dc_field_catches_the_real_intermittent_render_fault`.
+  Source: Audio Agent Workbench V2 at `3399f39`, `tools/analyze.py` and
+  `tests/test_analyze.py`. `np.trapz` replaced by this package's
+  numpy-2-safe `_trapezoid`; the optional real-render test was re-gated on
+  an `ANALYZE_DC_RENDERS` environment variable, matching how
+  `ANALYZE_BELL_RENDERS` already handles non-redistributable renders,
+  instead of V2's hardcoded repo-relative paths.
+
+  This was the one capability the 2026-09-20 reconciliation found to be
+  qualified in V2 but absent from the package
+  (`agent-enumeration-lab` `findings/domain/audio/audio-lifecycle-reconciliation.md`).
+
+- No knowledge, Skill or reference content changed in v0.2.0.

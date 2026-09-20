@@ -30,6 +30,7 @@ number. Mutually exclusive with `--sections`.
 Proves technical properties only. It cannot say whether audio sounds good.
 """
 import json
+import os
 import sys
 import wave
 
@@ -152,6 +153,31 @@ def band_energy(x, fs):
     return out, centroid
 
 
+def low_frequency_faults(x, fs):
+    """DC offset and sub-20Hz energy: faults a render can carry that no
+    other field in this report shows. An intermittent ~0.56 DC render once
+    halved a mix's loudness while every other metric looked plausible (V2
+    chords-melody-variations-01).
+
+    Reported, not judged: a low value does not mean a bass sounds good, and
+    a high one may be a property of the sound rather than a pipeline fault.
+    If a render carries DC on every attempt that is the sound; if only on
+    some attempts, re-render.
+
+    welch's default per-segment detrend removes DC from the PSD, so the
+    infrasonic share is signal energy between ~0 and 20Hz, not the offset.
+
+    Promoted from Audio Agent Workbench V2 at 3399f39, with np.trapz
+    replaced by the numpy-2-safe _trapezoid used elsewhere in this file."""
+    dc = np.abs(x.mean(axis=0))
+    mono = x.mean(axis=1)
+    f, P = welch(mono, fs, nperseg=min(len(mono), 65536))
+    tot = _trapezoid(P, f)
+    m = (f > 0) & (f < 20)
+    infra = float(100 * _trapezoid(P[m], f[m]) / tot) if tot > 0 and m.sum() > 1 else 0.0
+    return float(dc.max()), infra
+
+
 def silence_runs(x, fs, thresh_db=-60, min_run_s=0.5):
     env = np.abs(x).max(axis=1)
     win = max(1, int(fs * 0.05))
@@ -191,6 +217,7 @@ def compute_report(x, fs, path):
     else:
         corr, ms_ratio = None, None
     bands, centroid = band_energy(x, fs)
+    dc_max, infra_pct = low_frequency_faults(x, fs)
 
     return {
         "file": path,
@@ -208,6 +235,8 @@ def compute_report(x, fs, path):
         "spectral_centroid_hz": round(centroid, 1),
         "band_energy_pct": {k: round(v, 1) for k, v in bands.items()},
         "silence_runs_ge_0.5s": silence_runs(x, fs),
+        "dc_offset_max_abs": round(dc_max, 4),
+        "infrasonic_below_20hz_pct": round(infra_pct, 2),
     }
 
 
@@ -245,8 +274,24 @@ def analyze(path, sections=None, window=None):
     return report
 
 
+def package_version():
+    """Read the version from the package manifest rather than repeating it
+    here, so there is one place it can be wrong. Returns None if this file
+    has been copied out of its package."""
+    manifest = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, "plugin.json")
+    try:
+        with open(manifest) as f:
+            return json.load(f).get("version")
+    except (OSError, ValueError):
+        return None
+
+
 def main():
-    usage = "usage: analyze.py render.wav [--sections sections.json | --window START_S DURATION_S]"
+    usage = "usage: analyze.py render.wav [--sections sections.json | --window START_S DURATION_S] | --version"
+    if "--version" in sys.argv:
+        v = package_version()
+        print(f"bouch-audio {v}" if v else "bouch-audio (detached copy: no package manifest found)")
+        sys.exit(0)
     if len(sys.argv) < 2:
         print(usage, file=sys.stderr)
         sys.exit(2)

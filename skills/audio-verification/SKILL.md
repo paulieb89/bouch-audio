@@ -2,6 +2,7 @@
 name: audio-verification
 description: How to check audio work before trusting or reporting it — measuring a rendered, bounced or exported WAV (BS.1770 loudness, LRA, true peak, clipping, silence, stereo correlation, band energy, windowed attack/transient analysis), proving an offline audio edit (slice, reverse, repitch, arrange) with manifests and seeded faults, isolating a pipeline defect with a static control, and preparing a loudness-matched blind A/B so a human listener decides. Use after any audio render or export, when a tool reports success on audio, before claiming a mix, sound or soundtrack works or is better, or when asked which version sounds better. Not for deciding how to design or mix the sound itself (electronic-production, mixing-and-mastering).
 compatibility: The bundled tools need Python 3.10+ with numpy and scipy (or uv, via the scripts' inline metadata). The reasoning works without them.
+allowed-tools: Bash(python ${CLAUDE_PLUGIN_ROOT}/tools/*), Bash(uv run ${CLAUDE_PLUGIN_ROOT}/tools/*)
 metadata:
   package: bouch-audio
   evidence: tiered; see references/evidence-status.md
@@ -21,23 +22,29 @@ Two kinds of authority, never mixed up:
 
 1. **Don't trust success echoes.** A tool reporting OK is not evidence.
    Re-derive the result from the produced file or state.
-2. **Measure the artifact** with the bundled analyser (paths are relative
-   to this Skill):
+2. **Measure the artifact** with the bundled analyser. `${CLAUDE_PLUGIN_ROOT}`
+   resolves to this package's installed directory, so these work from any
+   working directory and always run *this* pinned release's analyser — not
+   a copy that happens to sit in the project you are working in:
 
    ```
-   python ../../tools/analyze.py render.wav                     # whole file, JSON
-   python ../../tools/analyze.py render.wav --window 0.0 0.021  # a transient/attack
-   python ../../tools/analyze.py render.wav --sections s.json   # per-section loudness
+   python ${CLAUDE_PLUGIN_ROOT}/tools/analyze.py render.wav                     # whole file, JSON
+   python ${CLAUDE_PLUGIN_ROOT}/tools/analyze.py render.wav --window 0.0 0.021  # a transient/attack
+   python ${CLAUDE_PLUGIN_ROOT}/tools/analyze.py render.wav --sections s.json   # per-section loudness
    ```
 
-   With uv, `uv run ../../tools/analyze.py …` installs numpy and scipy from
-   the script's inline metadata. Look for what is **wrong** (clipping,
+   If a project carries its own analyser, prefer this one and say which you
+   used: a local copy may predate a correction made here. Confirm the
+   release with `python ${CLAUDE_PLUGIN_ROOT}/tools/analyze.py --version`.
+
+   With uv, `uv run ${CLAUDE_PLUGIN_ROOT}/tools/analyze.py …` installs numpy
+   and scipy from the script's inline metadata. Look for what is **wrong** (clipping,
    unintended silence, wrong duration, unexplained band or stereo
    anomalies). A pass means technically sound, not approved.
 3. **Confirm the specific intended effect** where and when it should
    happen: a window around the event, or a static control on the same path
    when a feature seems not to work.
-4. **Offline edits:** use `../../tools/sample_op.py` (slice, arrange,
+4. **Offline edits:** use `${CLAUDE_PLUGIN_ROOT}/tools/sample_op.py` (slice, arrange,
    reverse, repitch, verify). Every output gets a manifest with hashes and
    per-check results. Exit code 0 means every required postcondition
    passed. Keep the manifests; they are the provenance.

@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "bouch-audio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Portable, evidence-tiered audio production knowledge: electronic-production reasoning (sound design, bass/drums, arrangement, resampling), mixing-and-mastering boundaries, and audio verification (render measurement, verified offline transforms, loudness-matched blind listening). DAW-independent; listening decides musical quality, measurement proves technical properties.",
   "author": {
     "name": "Paul Boucherat"

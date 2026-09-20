@@ -4,7 +4,7 @@ A portable, evidence-tiered audio domain capability for agents: reasoning
 for electronic production, mixing and mastering, and audio verification.
 It includes two tested deterministic tools. It does not depend on any DAW.
 
-Registry identity: `dev.bouch/audio`. Status: **experimental** (v0.1.0).
+Registry identity: `dev.bouch/audio`. Status: **experimental** (v0.2.0).
 
 ## What this is
 
